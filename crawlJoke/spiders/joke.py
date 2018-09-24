@@ -16,14 +16,16 @@ class JokeSpider(CrawlSpider):
     def parse(self, response):
         for each in response.xpath('//div[@class="joke_right"]/ul/li'):
             classify = each.xpath("./a/text()").extract()[0].strip()
+            classify = classify[0:classify.index('(')]
             link = each.xpath("./a/@href").extract()[0].strip()
             url = base_url + link
-            if "/yuanchuangxiaohua/" != link and '/list33_1.htm' == link:
-                yield scrapy.Request(url=url, meta={'classify': classify}, callback=self.list_parse)
+            if "/yuanchuangxiaohua/" == link:
+                yield scrapy.Request(url='{}list/default{}.htm'.format(url,1), meta={'classify': classify}, callback=self.ycjoke_parse)
+            # elif'/list6_1.htm' == link:
+            #     yield scrapy.Request(url=url, meta={'classify': classify}, callback=self.list_parse)
 
     def list_parse(self, response):
         classify = response.meta['classify']
-        classify = classify[0:classify.index('(')]
         url = response.url
         print('url: ' + response.url)
         start = re.findall(r"_(\d*).htm", url)[0]
@@ -42,10 +44,12 @@ class JokeSpider(CrawlSpider):
             pass
         else:
             end = re.findall(r"_(\d*).htm", endurl)[0]
-            print('end: ' + end)
-            nowurl = url.replace("_{}.htm".format(start), "_{}.htm".format(end))
-            print("nowurl: " + nowurl)
-            yield scrapy.Request(url=nowurl, meta={'classify': classify}, callback=self.list_parse)
+            now = int(start) + 1
+            print('now: {}, end: {}'.format(now, end))
+            if int(start) < int(end):
+                nowurl = url.replace("_{}.htm".format(start), "_{}.htm".format(now))
+                print("nowurl: " + nowurl)
+                yield scrapy.Request(url=nowurl, meta={'classify': classify}, callback=self.list_parse)
 
     def joke_parse(self, response):
         joke = response.meta['joke']
@@ -53,3 +57,18 @@ class JokeSpider(CrawlSpider):
         item['content'] = response.xpath('//*[@id="text110"]').extract()[0].strip()
         # 把数据交给管道文件
         yield item
+
+    # 原创笑话
+    def ycjoke_parse(self, response):
+        classify = response.meta['classify']
+        url = response.url
+        print('url: ' + response.url)
+        for each in response.xpath("//div[@class='ycjoke']/div[@class='txt']"):
+            print('jokelink: {}, content: {}'.format(base_url + each.xpath('./h2/a/@href').extract()[0].strip(), each.xpath('string(./ul/li)').extract()[0]))
+            item = JokeItem()
+            item['classify'] = classify
+            item['title'] = each.xpath('./h2/a/text()').extract()[0].strip()
+            item['content'] = each.xpath('string(./ul/li)').extract()[0].strip()
+            item['pubtime'] = each.xpath('./span/i/text()').extract()[0].strip()
+            item['jokelink'] = base_url + each.xpath('./h2/a/@href').extract()[0].strip()
+            yield item
