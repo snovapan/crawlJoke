@@ -5,6 +5,6 @@ CREATE TABLE `t_joke` (
   `content` mediumtext COMMENT '内容',
   `pubtime` datetime DEFAULT NULL COMMENT '发布时间',
   `jokelink` varchar(100) DEFAULT NULL COMMENT '来源',
+  `page` int(11) DEFAULT NULL COMMENT '列表页数',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
-

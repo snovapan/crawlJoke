@@ -19,10 +19,14 @@ class JokeSpider(CrawlSpider):
             classify = classify[0:classify.index('(')]
             link = each.xpath("./a/@href").extract()[0].strip()
             url = base_url + link
+            print('class:{}, url:{}'.format(classify,url))
             if "/yuanchuangxiaohua/" == link:
-                yield scrapy.Request(url='{}list/default{}.htm'.format(url,1), meta={'classify': classify}, callback=self.ycjoke_parse)
-            # elif'/list6_1.htm' == link:
-            #     yield scrapy.Request(url=url, meta={'classify': classify}, callback=self.list_parse)
+                for page in range(1,8066):
+                    yield scrapy.Request(url='{}list/default{}.htm'.format(url, page), meta={'classify': classify, 'page':page}, callback=self.ycjoke_parse)
+            else:
+                yield scrapy.Request(url=url, meta={'classify': classify}, callback=self.list_parse)
+#            if '/list43_1.htm' == link:
+#                yield scrapy.Request(url=url, meta={'classify': classify}, callback=self.list_parse)
 
     def list_parse(self, response):
         classify = response.meta['classify']
@@ -35,6 +39,7 @@ class JokeSpider(CrawlSpider):
         for each in response.xpath('/html/body/div[3]/div[1]/div[2]/ul/li'):
             item = JokeItem()
             item['classify'] = classify
+            item['page'] = start
             item['title'] = each.xpath('./b/a/text()').extract()[0].strip()
             item['content'] = 'content'
             item['pubtime'] = each.xpath('./i/text()').extract()[0].strip()
@@ -54,21 +59,26 @@ class JokeSpider(CrawlSpider):
     def joke_parse(self, response):
         joke = response.meta['joke']
         item = copy.deepcopy(joke)
-        item['content'] = response.xpath('//*[@id="text110"]').extract()[0].strip()
+        item['content'] = response.xpath('normalize-space(//*[@id="text110"])').extract()[0].strip()
         # 把数据交给管道文件
         yield item
 
     # 原创笑话
     def ycjoke_parse(self, response):
         classify = response.meta['classify']
+        page = response.meta['page']
         url = response.url
         print('url: ' + response.url)
         for each in response.xpath("//div[@class='ycjoke']/div[@class='txt']"):
             print('jokelink: {}, content: {}'.format(base_url + each.xpath('./h2/a/@href').extract()[0].strip(), each.xpath('string(./ul/li)').extract()[0]))
             item = JokeItem()
             item['classify'] = classify
+            item['page'] = page
             item['title'] = each.xpath('./h2/a/text()').extract()[0].strip()
-            item['content'] = each.xpath('string(./ul/li)').extract()[0].strip()
+            content = each.xpath('normalize-space(./ul/li)').extract()[0].strip()
+            if content.endswith('[完]'):
+                content = content[0:-3]
+            item['content'] = content
             item['pubtime'] = each.xpath('./span/i/text()').extract()[0].strip()
             item['jokelink'] = base_url + each.xpath('./h2/a/@href').extract()[0].strip()
             yield item

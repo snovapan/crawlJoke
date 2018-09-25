@@ -8,6 +8,7 @@
 import json
 import pymysql.cursors
 
+
 class CrawljokePipeline(object):
     def __init__(self):
         self.filename = open("joke.json", "wb")
@@ -33,8 +34,8 @@ class CrawljokePipeline(object):
         conn = self.getCon()
         try:
             with conn.cursor() as cursor:
-                val = [item['classify'],item['title'],item['content'],item['pubtime'],item['jokelink']]
-                sql = 'INSERT INTO t_joke(classify,title,content,pubtime,jokelink) select %s,%s,%s,from_unixtime(unix_timestamp(%s)),%s'
+                val = [item['classify'],item['title'],item['content'],item['pubtime'],item['jokelink'],item['page']]
+                sql = 'INSERT INTO t_joke(classify,title,content,pubtime,jokelink,page) select %s,%s,%s,from_unixtime(unix_timestamp(%s)),%s,%s'
                 cursor.execute(sql, val)
                 # 如果没有设置自动提交事务，则这里需要手动提交一次
                 conn.commit()

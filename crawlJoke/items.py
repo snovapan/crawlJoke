@@ -13,6 +13,8 @@ class JokeItem(scrapy.Item):
     # name = scrapy.Field()
     #分类
     classify = scrapy.Field()
+    #列表页数
+    page = scrapy.Field()
     #标题
     title = scrapy.Field()
     #内容
